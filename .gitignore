@@ -5,3 +5,5 @@ __pycache__/
 camu_payroll.db
 *.db
 .DS_Store
+*.xlsx
+*.xls
