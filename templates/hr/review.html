@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+{% block title %}Revisar Novedades — CAMU{% endblock %}
+
+{% block extra_head %}
+<style>
+  .dept-card { margin-bottom: 1.5rem; }
+  .dept-card .card-header { background: #D9E1F2; color: #1F3864; font-weight: 700; }
+  .emp-table td { font-size: .83rem; vertical-align: middle; padding: 5px 8px; }
+  .emp-table th { font-size: .8rem; white-space: nowrap; }
+  .status-dot { display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:5px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center gap-3 mb-3 flex-wrap">
+  <a href="/hr/dashboard" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-left"></i></a>
+  <div>
+    <div class="page-title mb-0">Revisar Novedades</div>
+    <small class="text-muted">{{ period.period_label }} — {{ period.month_name }} {{ period.year }}</small>
+  </div>
+  <div class="ms-auto d-flex gap-2">
+    <a href="/export/excel/{{ period.id }}" class="btn btn-success btn-sm">
+      <i class="bi bi-file-earmark-excel me-1"></i>Exportar Excel
+    </a>
+    <a href="/export/pdf/{{ period.id }}" class="btn btn-danger btn-sm" target="_blank">
+      <i class="bi bi-file-earmark-pdf me-1"></i>Ver PDF
+    </a>
+  </div>
+</div>
+
+<!-- Company filter -->
+<div class="mb-3 d-flex gap-2 flex-wrap">
+  <a href="/hr/review/{{ period.id }}"
+     class="btn btn-sm {% if not selected_company_id %}btn-camu{% else %}btn-outline-secondary{% endif %}">
+    Todas las empresas
+  </a>
+  {% for co in companies %}
+  <a href="/hr/review/{{ period.id }}?company_id={{ co.id }}"
+     class="btn btn-sm {% if selected_company_id == co.id %}btn-camu{% else %}btn-outline-secondary{% endif %}">
+    {{ co.short_name }}
+  </a>
+  {% endfor %}
+</div>
+
+{% for item in dept_data %}
+{% set dept = item.department %}
+{% set sub = item.submission %}
+{% set employees = item.employees %}
+{% set novelties = item.novelties %}
+
+<div class="card dept-card">
+  <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <span>
+      <i class="bi bi-people me-2"></i>{{ dept.name }}
+      <span class="text-muted fw-normal small ms-2">{{ dept.company.short_name }}</span>
+    </span>
+    <div class="d-flex align-items-center gap-2">
+      {% if sub %}
+        {% if sub.status.value == 'aprobado' %}
+          <span class="badge badge-aprobado"><i class="bi bi-patch-check me-1"></i>Aprobado</span>
+        {% elif sub.status.value == 'enviado' %}
+          <span class="badge badge-enviado"><i class="bi bi-send me-1"></i>Enviado</span>
+          <form method="post" action="/hr/approve/department/{{ dept.id }}/{{ period.id }}" style="margin:0">
+            <button class="btn btn-sm btn-success">
+              <i class="bi bi-check-all me-1"></i>Aprobar todo
+            </button>
+          </form>
+          <form method="post" action="/hr/reject/department/{{ dept.id }}/{{ period.id }}" style="margin:0">
+            <button class="btn btn-sm btn-outline-danger" title="Devolver para corrección">
+              <i class="bi bi-arrow-counterclockwise"></i> Devolver
+            </button>
+          </form>
+        {% else %}
+          <span class="badge badge-pendiente"><i class="bi bi-clock me-1"></i>Pendiente</span>
+          <form method="post" action="/hr/approve/department/{{ dept.id }}/{{ period.id }}" style="margin:0">
+            <button class="btn btn-sm btn-success">
+              <i class="bi bi-check-all me-1"></i>Aprobar de todas formas
+            </button>
+          </form>
+        {% endif %}
+      {% else %}
+        <span class="badge badge-pendiente"><i class="bi bi-clock me-1"></i>Sin enviar</span>
+        <form method="post" action="/hr/approve/department/{{ dept.id }}/{{ period.id }}" style="margin:0">
+          <button class="btn btn-sm btn-success">
+            <i class="bi bi-check-all me-1"></i>Aprobar de todas formas
+          </button>
+        </form>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if employees %}
+  <div class="table-responsive">
+    <table class="table table-bordered emp-table mb-0">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Empleado</th>
+          <th class="text-center">Cédula</th>
+          <th class="text-center">Proyecto</th>
+          <th class="text-center">Días</th>
+          <th class="text-center">H.E. Diurnas</th>
+          <th class="text-center">H.E. Noct.</th>
+          <th class="text-center">H.E. Dom/Fest</th>
+          <th class="text-center">H.E. D/F/N</th>
+          <th>Observaciones</th>
+          <th class="text-center">Estado</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for emp in employees %}
+        {% set nov = novelties.get(emp.id) %}
+        <tr>
+          <td class="text-muted text-center">{{ loop.index }}</td>
+          <td>
+            <div class="fw-semibold">{{ emp.full_name }}</div>
+            {% if emp.cargo %}<div class="text-muted" style="font-size:.75rem">{{ emp.cargo }}</div>{% endif %}
+          </td>
+          <td class="text-center text-muted">{{ emp.cedula }}</td>
+          <td class="text-center">{{ emp.project_code or '—' }}</td>
+          <td class="text-center fw-semibold">{{ nov.num_dias if nov else '—' }}</td>
+          <td class="text-center">{{ nov.horas_extras_diurnas if nov and nov.horas_extras_diurnas else '—' }}</td>
+          <td class="text-center">{{ nov.horas_extras_nocturnas if nov and nov.horas_extras_nocturnas else '—' }}</td>
+          <td class="text-center">{{ nov.horas_extras_dom_fest if nov and nov.horas_extras_dom_fest else '—' }}</td>
+          <td class="text-center">{{ nov.horas_extras_dom_fest_noct if nov and nov.horas_extras_dom_fest_noct else '—' }}</td>
+          <td>
+            {% if nov and nov.observaciones %}
+            <span class="small">{{ nov.observaciones }}</span>
+            {% else %}
+            <span class="text-muted">—</span>
+            {% endif %}
+            {% if nov and nov.observaciones_aprobacion %}
+            <div class="text-success small mt-1">{{ nov.observaciones_aprobacion }}</div>
+            {% endif %}
+          </td>
+          <td class="text-center">
+            {% if nov %}
+              {% if nov.status.value == 'aprobado' %}
+                <span class="badge badge-aprobado">Aprobado</span>
+              {% else %}
+                <span class="badge badge-pendiente">Pendiente</span>
+              {% endif %}
+            {% else %}
+              <span class="text-muted small">Sin novedad</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="card-body text-muted small">Sin empleados activos en este departamento.</div>
+  {% endif %}
+</div>
+{% else %}
+<div class="alert alert-info">
+  <i class="bi bi-info-circle me-2"></i>No hay departamentos con empleados para este período.
+</div>
+{% endfor %}
+{% endblock %}

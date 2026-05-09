@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}Mi Panel — CAMU Novedades{% endblock %}
+
+{% block content %}
+<div class="page-title"><i class="bi bi-speedometer2 me-2"></i>Mi Panel</div>
+
+{% if not dept_summaries %}
+<div class="alert alert-info">
+  <i class="bi bi-info-circle me-2"></i>
+  No tiene departamentos asignados. Contacte al administrador.
+</div>
+{% endif %}
+
+{% set ns = namespace(last_period=None) %}
+{% for item in dept_summaries %}
+  {% if ns.last_period != item.period.id %}
+    {% if not loop.first %}</div>{% endif %}
+    {% set ns.last_period = item.period.id %}
+    <div class="card mb-4">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span>
+          <i class="bi bi-calendar2-week me-2"></i>
+          {{ item.period.period_label }} — {{ item.period.month_name }} {{ item.period.year }}
+        </span>
+      </div>
+      <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+          <thead>
+            <tr>
+              <th>Departamento</th>
+              <th>Empresa</th>
+              <th class="text-center">Empleados</th>
+              <th class="text-center">Novedades registradas</th>
+              <th class="text-center">Estado</th>
+              <th class="text-center">Acción</th>
+            </tr>
+          </thead>
+          <tbody>
+  {% endif %}
+
+  <tr>
+    <td><i class="bi bi-people me-1 text-muted"></i>{{ item.department.name }}</td>
+    <td class="text-muted small">{{ item.department.company.short_name }}</td>
+    <td class="text-center">{{ item.emp_count }}</td>
+    <td class="text-center">
+      <span class="{% if item.novelty_count == item.emp_count %}text-success fw-semibold{% else %}text-warning{% endif %}">
+        {{ item.novelty_count }} / {{ item.emp_count }}
+      </span>
+    </td>
+    <td class="text-center">
+      {% if item.submission %}
+        {% if item.submission.status.value == 'aprobado' %}
+          <span class="badge badge-aprobado"><i class="bi bi-patch-check me-1"></i>Aprobado</span>
+        {% elif item.submission.status.value == 'enviado' %}
+          <span class="badge badge-enviado"><i class="bi bi-send me-1"></i>Enviado</span>
+        {% else %}
+          <span class="badge badge-pendiente"><i class="bi bi-clock me-1"></i>Pendiente</span>
+        {% endif %}
+      {% else %}
+        <span class="badge badge-pendiente"><i class="bi bi-clock me-1"></i>Pendiente</span>
+      {% endif %}
+    </td>
+    <td class="text-center">
+      {% set can_edit = not item.submission or item.submission.status.value == 'pendiente' %}
+      <a href="/manager/novelties/{{ item.department.id }}/{{ item.period.id }}"
+         class="btn btn-sm {% if can_edit %}btn-camu{% else %}btn-outline-secondary{% endif %}">
+        {% if can_edit %}
+          <i class="bi bi-pencil-square me-1"></i>Ingresar
+        {% else %}
+          <i class="bi bi-eye me-1"></i>Ver
+        {% endif %}
+      </a>
+    </td>
+  </tr>
+
+  {% if loop.last %}</tbody></table></div></div>{% endif %}
+{% endfor %}
+{% endblock %}

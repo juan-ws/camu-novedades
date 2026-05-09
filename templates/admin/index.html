@@ -1,0 +1,351 @@
+{% extends "base.html" %}
+{% block title %}Administración — CAMU Novedades{% endblock %}
+
+{% block extra_head %}
+<style>
+  .admin-section { margin-bottom: 2rem; }
+  .table-sm td, .table-sm th { font-size: .82rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-title"><i class="bi bi-gear me-2"></i>Administración</div>
+
+{% if request.query_params.get('imported') %}
+<div class="alert alert-success alert-float">
+  <i class="bi bi-check-circle me-2"></i>{{ request.query_params.get('imported') }} empleado(s) importados correctamente.
+</div>
+{% endif %}
+
+<!-- Nav tabs -->
+<ul class="nav nav-tabs mb-4" id="adminTabs">
+  <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#tab-periods"><i class="bi bi-calendar2 me-1"></i>Períodos</a></li>
+  <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab-users"><i class="bi bi-people me-1"></i>Usuarios</a></li>
+  <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab-depts"><i class="bi bi-diagram-3 me-1"></i>Departamentos</a></li>
+  <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab-employees"><i class="bi bi-person-badge me-1"></i>Empleados</a></li>
+</ul>
+
+<div class="tab-content">
+
+  <!-- ── Períodos ── -->
+  <div class="tab-pane fade show active" id="tab-periods">
+    <div class="row g-4">
+      <div class="col-md-4">
+        <div class="card">
+          <div class="card-header">Crear Período de Nómina</div>
+          <div class="card-body">
+            <form method="post" action="/admin/periods/create">
+              <div class="mb-3">
+                <label class="form-label">Año</label>
+                <input type="number" name="year" class="form-control" value="2026" min="2020" max="2035" required>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Mes</label>
+                <select name="month" class="form-select" required>
+                  <option value="1">Enero</option><option value="2">Febrero</option>
+                  <option value="3">Marzo</option><option value="4">Abril</option>
+                  <option value="5">Mayo</option><option value="6">Junio</option>
+                  <option value="7">Julio</option><option value="8">Agosto</option>
+                  <option value="9">Septiembre</option><option value="10">Octubre</option>
+                  <option value="11">Noviembre</option><option value="12">Diciembre</option>
+                </select>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Quincena</label>
+                <select name="period_number" class="form-select" required>
+                  <option value="1">Primera Quincena (1–15)</option>
+                  <option value="2">Segunda Quincena (16–fin)</option>
+                </select>
+              </div>
+              <button type="submit" class="btn btn-camu w-100">
+                <i class="bi bi-plus-circle me-1"></i>Crear Período
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-8">
+        <div class="card">
+          <div class="card-header">Períodos Registrados</div>
+          <div class="card-body p-0">
+            <table class="table table-sm table-hover mb-0">
+              <thead><tr><th>Período</th><th>Año</th><th class="text-center">Activo</th></tr></thead>
+              <tbody>
+                {% for p in periods %}
+                <tr>
+                  <td>{{ p.period_label }} — {{ p.month_name }}</td>
+                  <td>{{ p.year }}</td>
+                  <td class="text-center">
+                    {% if p.is_active %}<span class="badge bg-success">Activo</span>{% else %}<span class="badge bg-secondary">Inactivo</span>{% endif %}
+                  </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="3" class="text-muted text-center py-3">Sin períodos aún.</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Usuarios ── -->
+  <div class="tab-pane fade" id="tab-users">
+    <div class="row g-4">
+      <div class="col-md-4">
+        <div class="card">
+          <div class="card-header">Crear Usuario</div>
+          <div class="card-body">
+            <form method="post" action="/admin/users/create">
+              <div class="mb-2">
+                <label class="form-label">Usuario</label>
+                <input type="text" name="username" class="form-control form-control-sm" required>
+              </div>
+              <div class="mb-2">
+                <label class="form-label">Nombre completo</label>
+                <input type="text" name="full_name" class="form-control form-control-sm" required>
+              </div>
+              <div class="mb-2">
+                <label class="form-label">Contraseña</label>
+                <input type="password" name="password" class="form-control form-control-sm" required>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Rol</label>
+                <select name="role" class="form-select form-select-sm" required>
+                  <option value="manager">Jefe de Área</option>
+                  <option value="hr">Talento Humano</option>
+                  <option value="admin">Administrador</option>
+                </select>
+              </div>
+              <button type="submit" class="btn btn-camu btn-sm w-100">
+                <i class="bi bi-person-plus me-1"></i>Crear Usuario
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-8">
+        <div class="card">
+          <div class="card-header">Usuarios del Sistema</div>
+          <div class="card-body p-0">
+            <table class="table table-sm table-hover mb-0">
+              <thead><tr><th>Usuario</th><th>Nombre</th><th>Rol</th><th>Departamentos asignados</th><th></th></tr></thead>
+              <tbody>
+                {% for u in users %}
+                <tr>
+                  <td><code>{{ u.username }}</code></td>
+                  <td>{{ u.full_name }}</td>
+                  <td>
+                    <span class="badge {% if u.role.value == 'admin' %}bg-danger{% elif u.role.value == 'hr' %}bg-info text-dark{% else %}bg-secondary{% endif %}">
+                      {{ u.role.value }}
+                    </span>
+                  </td>
+                  <td class="small text-muted">
+                    {% for md in u.managed_departments %}{{ md.department.name }}{% if not loop.last %}, {% endif %}{% endfor %}
+                  </td>
+                  <td>
+                    <button class="btn btn-xs btn-outline-secondary btn-sm" data-bs-toggle="collapse"
+                            data-bs-target="#assign_{{ u.id }}">
+                      <i class="bi bi-diagram-3"></i>
+                    </button>
+                  </td>
+                </tr>
+                <tr class="collapse" id="assign_{{ u.id }}">
+                  <td colspan="5" class="bg-light">
+                    <form method="post" action="/admin/users/{{ u.id }}/departments" class="p-2">
+                      <div class="row g-1">
+                        {% for dept in departments %}
+                        <div class="col-6 col-md-4 col-lg-3">
+                          <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="dept_ids"
+                                   value="{{ dept.id }}" id="d_{{ u.id }}_{{ dept.id }}"
+                                   {% if dept.id in u.managed_departments|map(attribute='department_id')|list %}checked{% endif %}>
+                            <label class="form-check-label small" for="d_{{ u.id }}_{{ dept.id }}">
+                              {{ dept.name }} <span class="text-muted">({{ dept.company.short_name }})</span>
+                            </label>
+                          </div>
+                        </div>
+                        {% endfor %}
+                      </div>
+                      <button type="submit" class="btn btn-sm btn-camu mt-2">
+                        <i class="bi bi-save me-1"></i>Guardar asignación
+                      </button>
+                    </form>
+                  </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="5" class="text-muted text-center py-3">Sin usuarios.</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Departamentos ── -->
+  <div class="tab-pane fade" id="tab-depts">
+    <div class="row g-4">
+      <div class="col-md-4">
+        <div class="card">
+          <div class="card-header">Nuevo Departamento</div>
+          <div class="card-body">
+            <form method="post" action="/admin/departments/create">
+              <div class="mb-2">
+                <label class="form-label">Nombre del departamento</label>
+                <input type="text" name="name" class="form-control form-control-sm" required placeholder="PRESIDENCIA">
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Empresa</label>
+                <select name="company_id" class="form-select form-select-sm" required>
+                  {% for co in companies %}
+                  <option value="{{ co.id }}">{{ co.short_name }} — {{ co.full_name }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <button type="submit" class="btn btn-camu btn-sm w-100">
+                <i class="bi bi-plus-circle me-1"></i>Crear Departamento
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-8">
+        <div class="card">
+          <div class="card-header">Departamentos</div>
+          <div class="card-body p-0">
+            <table class="table table-sm table-hover mb-0">
+              <thead><tr><th>Departamento</th><th>Empresa</th><th class="text-center">Empleados</th></tr></thead>
+              <tbody>
+                {% for dept in departments %}
+                <tr>
+                  <td>{{ dept.name }}</td>
+                  <td class="text-muted">{{ dept.company.short_name }}</td>
+                  <td class="text-center">{{ dept.employees|selectattr('is_active')|list|length }}</td>
+                </tr>
+                {% else %}
+                <tr><td colspan="3" class="text-muted text-center py-3">Sin departamentos.</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Empleados ── -->
+  <div class="tab-pane fade" id="tab-employees">
+    <div class="row g-4">
+      <div class="col-12">
+        <div class="card mb-3">
+          <div class="card-header">Importar desde CSV</div>
+          <div class="card-body">
+            <form method="post" action="/admin/employees/import" enctype="multipart/form-data" class="row g-2 align-items-end">
+              <div class="col-md-6">
+                <label class="form-label small">Archivo CSV (columnas: full_name, cedula, internal_code, department_name, company_short_name, project_code, cargo)</label>
+                <input type="file" name="file" class="form-control form-control-sm" accept=".csv" required>
+              </div>
+              <div class="col-md-3">
+                <button type="submit" class="btn btn-camu btn-sm">
+                  <i class="bi bi-upload me-1"></i>Importar CSV
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-5">
+        <div class="card">
+          <div class="card-header">Agregar Empleado</div>
+          <div class="card-body">
+            <form method="post" action="/admin/employees/create">
+              <div class="mb-2">
+                <label class="form-label">Nombre completo</label>
+                <input type="text" name="full_name" class="form-control form-control-sm" required>
+              </div>
+              <div class="row g-2 mb-2">
+                <div class="col">
+                  <label class="form-label">Cédula</label>
+                  <input type="text" name="cedula" class="form-control form-control-sm" required>
+                </div>
+                <div class="col">
+                  <label class="form-label">Código interno</label>
+                  <input type="text" name="internal_code" class="form-control form-control-sm" placeholder="00.316.976">
+                </div>
+              </div>
+              <div class="mb-2">
+                <label class="form-label">Empresa</label>
+                <select name="company_id" class="form-select form-select-sm" required>
+                  {% for co in companies %}
+                  <option value="{{ co.id }}">{{ co.short_name }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="mb-2">
+                <label class="form-label">Departamento</label>
+                <select name="department_id" class="form-select form-select-sm" required>
+                  {% for dept in departments %}
+                  <option value="{{ dept.id }}">{{ dept.name }} ({{ dept.company.short_name }})</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="row g-2 mb-3">
+                <div class="col">
+                  <label class="form-label">Código proyecto</label>
+                  <input type="text" name="project_code" class="form-control form-control-sm" placeholder="BRASSIA">
+                </div>
+                <div class="col">
+                  <label class="form-label">Cargo</label>
+                  <input type="text" name="cargo" class="form-control form-control-sm">
+                </div>
+              </div>
+              <button type="submit" class="btn btn-camu btn-sm w-100">
+                <i class="bi bi-person-plus me-1"></i>Agregar
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-7">
+        <div class="card">
+          <div class="card-header d-flex justify-content-between">
+            <span>Empleados ({{ employees|length }})</span>
+          </div>
+          <div class="card-body p-0" style="max-height:500px;overflow-y:auto;">
+            <table class="table table-sm table-hover mb-0">
+              <thead style="position:sticky;top:0;">
+                <tr><th>Nombre</th><th>Cédula</th><th>Dpto.</th><th>Empresa</th><th class="text-center">Activo</th></tr>
+              </thead>
+              <tbody>
+                {% for emp in employees %}
+                <tr>
+                  <td>{{ emp.full_name }}</td>
+                  <td class="text-muted small">{{ emp.cedula }}</td>
+                  <td class="small">{{ emp.department.name }}</td>
+                  <td class="small text-muted">{{ emp.company.short_name }}</td>
+                  <td class="text-center">
+                    <form method="post" action="/admin/employees/{{ emp.id }}/toggle" style="margin:0">
+                      <button class="btn btn-xs btn-sm {% if emp.is_active %}btn-success{% else %}btn-outline-secondary{% endif %}" style="padding:1px 7px;font-size:.75rem;">
+                        {% if emp.is_active %}<i class="bi bi-check"></i>{% else %}<i class="bi bi-x"></i>{% endif %}
+                      </button>
+                    </form>
+                  </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="5" class="text-muted text-center py-3">Sin empleados.</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- tab-content -->
+{% endblock %}

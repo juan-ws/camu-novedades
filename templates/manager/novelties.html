@@ -1,0 +1,194 @@
+{% extends "base.html" %}
+{% block title %}Novedades — {{ dept.name }}{% endblock %}
+
+{% block extra_head %}
+<style>
+  .emp-row td { padding: 6px 8px; vertical-align: middle; }
+  .emp-row input[type=number] { width: 80px; font-size: .85rem; }
+  .emp-row textarea { font-size: .82rem; resize: vertical; min-height: 38px; }
+  .sticky-header th { position: sticky; top: 56px; z-index: 10; }
+  .col-name { min-width: 200px; }
+  .col-num { width: 88px; }
+  .col-obs { min-width: 220px; }
+  .section-title { background: #D9E1F2; font-weight: 700; color: #1F3864; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center gap-3 mb-3 flex-wrap">
+  <a href="/manager/dashboard" class="btn btn-sm btn-outline-secondary">
+    <i class="bi bi-arrow-left"></i>
+  </a>
+  <div>
+    <div class="page-title mb-0">{{ dept.name }}</div>
+    <small class="text-muted">{{ dept.company.full_name }} &mdash; {{ period.period_label }}, {{ period.month_name }} {{ period.year }}</small>
+  </div>
+
+  {% if submission %}
+    {% if submission.status.value == 'aprobado' %}
+    <span class="badge badge-aprobado ms-auto fs-6"><i class="bi bi-patch-check me-1"></i>Aprobado por Talento Humano</span>
+    {% elif submission.status.value == 'enviado' %}
+    <span class="badge badge-enviado ms-auto fs-6"><i class="bi bi-send me-1"></i>Enviado — En revisión</span>
+    {% endif %}
+  {% endif %}
+</div>
+
+{% if readonly %}
+<div class="alert alert-info py-2 mb-3">
+  <i class="bi bi-lock me-2"></i>
+  Este período ya fue enviado a Talento Humano y no puede modificarse.
+  {% if submission.status.value == 'aprobado' %}Fue aprobado el {{ submission.approved_at.strftime('%d/%m/%Y') if submission.approved_at else '' }}.{% endif %}
+</div>
+{% endif %}
+
+<form method="post" action="/manager/novelties/{{ dept.id }}/{{ period.id }}/save" id="noveltyForm">
+  <div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <span><i class="bi bi-table me-2"></i>{{ employees|length }} empleado(s)</span>
+      {% if not readonly %}
+      <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-sm btn-light">
+          <i class="bi bi-floppy me-1"></i>Guardar borrador
+        </button>
+      </div>
+      {% endif %}
+    </div>
+
+    <div class="table-responsive">
+      <table class="table table-bordered mb-0">
+        <thead class="sticky-header">
+          <tr>
+            <th class="col-name">Empleado</th>
+            <th class="col-num text-center">Cédula</th>
+            <th class="col-num text-center">N° Días</th>
+            <th class="col-num text-center">H.E. Diurnas</th>
+            <th class="col-num text-center">H.E. Nocturnas</th>
+            <th class="col-num text-center">H.E. Dom/Fest</th>
+            <th class="col-num text-center">H.E. Dom/Fest/Noct</th>
+            <th class="col-obs">Observaciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for emp in employees %}
+          {% set nov = novelties.get(emp.id) %}
+          <tr class="emp-row">
+            <td>
+              <div class="fw-semibold">{{ emp.full_name }}</div>
+              {% if emp.cargo %}<div class="text-muted small">{{ emp.cargo }}</div>{% endif %}
+              {% if emp.project_code %}<div class="badge bg-light text-dark border small">{{ emp.project_code }}</div>{% endif %}
+            </td>
+            <td class="text-center text-muted small">{{ emp.cedula }}</td>
+
+            <td class="text-center">
+              {% if readonly %}
+                {{ nov.num_dias if nov else 15.0 }}
+              {% else %}
+              <input type="number" name="emp_{{ emp.id }}_num_dias"
+                     class="form-control form-control-sm text-center"
+                     value="{{ nov.num_dias if nov else 15.0 }}"
+                     min="0" max="15" step="0.5">
+              {% endif %}
+            </td>
+
+            <td class="text-center">
+              {% if readonly %}
+                {{ nov.horas_extras_diurnas if nov and nov.horas_extras_diurnas else '' }}
+              {% else %}
+              <input type="number" name="emp_{{ emp.id }}_horas_extras_diurnas"
+                     class="form-control form-control-sm text-center"
+                     value="{{ nov.horas_extras_diurnas if nov and nov.horas_extras_diurnas else '' }}"
+                     min="0" step="0.5" placeholder="—">
+              {% endif %}
+            </td>
+
+            <td class="text-center">
+              {% if readonly %}
+                {{ nov.horas_extras_nocturnas if nov and nov.horas_extras_nocturnas else '' }}
+              {% else %}
+              <input type="number" name="emp_{{ emp.id }}_horas_extras_nocturnas"
+                     class="form-control form-control-sm text-center"
+                     value="{{ nov.horas_extras_nocturnas if nov and nov.horas_extras_nocturnas else '' }}"
+                     min="0" step="0.5" placeholder="—">
+              {% endif %}
+            </td>
+
+            <td class="text-center">
+              {% if readonly %}
+                {{ nov.horas_extras_dom_fest if nov and nov.horas_extras_dom_fest else '' }}
+              {% else %}
+              <input type="number" name="emp_{{ emp.id }}_horas_extras_dom_fest"
+                     class="form-control form-control-sm text-center"
+                     value="{{ nov.horas_extras_dom_fest if nov and nov.horas_extras_dom_fest else '' }}"
+                     min="0" step="0.5" placeholder="—">
+              {% endif %}
+            </td>
+
+            <td class="text-center">
+              {% if readonly %}
+                {{ nov.horas_extras_dom_fest_noct if nov and nov.horas_extras_dom_fest_noct else '' }}
+              {% else %}
+              <input type="number" name="emp_{{ emp.id }}_horas_extras_dom_fest_noct"
+                     class="form-control form-control-sm text-center"
+                     value="{{ nov.horas_extras_dom_fest_noct if nov and nov.horas_extras_dom_fest_noct else '' }}"
+                     min="0" step="0.5" placeholder="—">
+              {% endif %}
+            </td>
+
+            <td>
+              {% if readonly %}
+                <span class="small">{{ nov.observaciones if nov and nov.observaciones else '—' }}</span>
+                {% if nov and nov.observaciones_aprobacion %}
+                <div class="text-success small mt-1"><i class="bi bi-check-circle me-1"></i>{{ nov.observaciones_aprobacion }}</div>
+                {% endif %}
+              {% else %}
+              <textarea name="emp_{{ emp.id }}_observaciones"
+                        class="form-control form-control-sm"
+                        rows="2"
+                        placeholder="Vacaciones, incapacidades, permisos...">{{ nov.observaciones if nov and nov.observaciones else '' }}</textarea>
+              {% endif %}
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="8" class="text-center text-muted py-4">No hay empleados activos en este departamento.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  {% if not readonly %}
+  <div class="d-flex gap-3 mt-3 justify-content-between">
+    <button type="submit" class="btn btn-outline-secondary">
+      <i class="bi bi-floppy me-1"></i>Guardar borrador
+    </button>
+    <button type="button" class="btn btn-success px-4" data-bs-toggle="modal" data-bs-target="#submitModal">
+      <i class="bi bi-send me-1"></i>Enviar a Talento Humano
+    </button>
+  </div>
+  {% endif %}
+</form>
+
+<!-- Submit confirmation modal -->
+<div class="modal fade" id="submitModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header" style="background:#1F3864;color:#fff;">
+        <h5 class="modal-title"><i class="bi bi-send me-2"></i>Confirmar envío</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p>¿Está seguro de enviar las novedades de <strong>{{ dept.name }}</strong> para el período <strong>{{ period.period_label }} {{ period.month_name }} {{ period.year }}</strong>?</p>
+        <p class="text-warning small"><i class="bi bi-exclamation-triangle me-1"></i>Una vez enviadas, no podrá modificarlas sin que Talento Humano las devuelva.</p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <form method="post" action="/manager/novelties/{{ dept.id }}/{{ period.id }}/submit" style="display:inline">
+          <button type="submit" class="btn btn-success">
+            <i class="bi bi-send-check me-1"></i>Sí, enviar
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

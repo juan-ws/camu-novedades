@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Novedades CAMU{% endblock %}</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+  <style>
+    :root {
+      --camu-dark: #1F3864;
+      --camu-mid: #2E5FA3;
+      --camu-light: #D9E1F2;
+    }
+    body { background: #f5f7fa; font-size: 0.92rem; }
+    .navbar { background: var(--camu-dark) !important; }
+    .navbar-brand { font-weight: 700; letter-spacing: .5px; }
+    .sidebar { min-height: calc(100vh - 56px); background: #fff; border-right: 1px solid #dee2e6; }
+    .sidebar .nav-link { color: #444; border-radius: 6px; padding: 8px 14px; margin: 2px 0; }
+    .sidebar .nav-link:hover, .sidebar .nav-link.active {
+      background: var(--camu-light); color: var(--camu-dark); font-weight: 600;
+    }
+    .sidebar .nav-link i { margin-right: 8px; }
+    .card { border: none; box-shadow: 0 1px 6px rgba(0,0,0,.08); border-radius: 10px; }
+    .card-header { background: var(--camu-dark); color: #fff; border-radius: 10px 10px 0 0 !important; font-weight: 600; }
+    .badge-pendiente { background: #ffc107; color: #000; }
+    .badge-enviado { background: #0dcaf0; color: #000; }
+    .badge-aprobado { background: #198754; color: #fff; }
+    .table thead th { background: var(--camu-dark); color: #fff; font-size: .82rem; white-space: nowrap; }
+    .table td { vertical-align: middle; font-size: .85rem; }
+    .page-title { font-size: 1.3rem; font-weight: 700; color: var(--camu-dark); margin-bottom: 1rem; }
+    .btn-camu { background: var(--camu-dark); color: #fff; }
+    .btn-camu:hover { background: var(--camu-mid); color: #fff; }
+    .input-number { width: 90px !important; }
+    .alert-float {
+      position: fixed; top: 70px; right: 20px; z-index: 9999;
+      min-width: 280px; animation: fadeout 4s forwards;
+    }
+    @keyframes fadeout { 0%{opacity:1} 80%{opacity:1} 100%{opacity:0} }
+  </style>
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+<nav class="navbar navbar-dark navbar-expand-lg">
+  <div class="container-fluid">
+    <a class="navbar-brand" href="/">
+      <i class="bi bi-building me-2"></i>CAMU Novedades
+    </a>
+    <div class="ms-auto d-flex align-items-center gap-3">
+      <span class="text-white-50 small">
+        <i class="bi bi-person-circle me-1"></i>{{ user.full_name }}
+        <span class="badge ms-1 {% if user.role.value == 'admin' %}bg-danger{% elif user.role.value == 'hr' %}bg-info text-dark{% else %}bg-secondary{% endif %}">
+          {{ user.role.value|upper }}
+        </span>
+      </span>
+      <a href="/logout" class="btn btn-sm btn-outline-light">
+        <i class="bi bi-box-arrow-right"></i> Salir
+      </a>
+    </div>
+  </div>
+</nav>
+
+<div class="container-fluid">
+  <div class="row">
+    <nav class="col-md-2 sidebar py-3 d-none d-md-block">
+      {% if user.role.value in ('hr', 'admin') %}
+      <p class="text-muted small px-2 mb-1 fw-bold">TALENTO HUMANO</p>
+      <ul class="nav flex-column mb-3">
+        <li class="nav-item">
+          <a class="nav-link {% if request.url.path.startswith('/hr/dashboard') %}active{% endif %}" href="/hr/dashboard">
+            <i class="bi bi-speedometer2"></i> Panel General
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link {% if request.url.path.startswith('/hr/review') %}active{% endif %}" href="/hr/dashboard">
+            <i class="bi bi-check2-circle"></i> Revisar Novedades
+          </a>
+        </li>
+      </ul>
+      {% endif %}
+
+      {% if user.role.value == 'manager' %}
+      <p class="text-muted small px-2 mb-1 fw-bold">JEFE DE ÁREA</p>
+      <ul class="nav flex-column mb-3">
+        <li class="nav-item">
+          <a class="nav-link {% if request.url.path.startswith('/manager') %}active{% endif %}" href="/manager/dashboard">
+            <i class="bi bi-speedometer2"></i> Mi Panel
+          </a>
+        </li>
+      </ul>
+      {% endif %}
+
+      {% if user.role.value in ('admin', 'hr') %}
+      <p class="text-muted small px-2 mb-1 fw-bold">ADMINISTRACIÓN</p>
+      <ul class="nav flex-column">
+        <li class="nav-item">
+          <a class="nav-link {% if request.url.path.startswith('/admin') %}active{% endif %}" href="/admin/">
+            <i class="bi bi-gear"></i> Configuración
+          </a>
+        </li>
+      </ul>
+      {% endif %}
+    </nav>
+
+    <main class="col-md-10 py-4 px-4">
+      {% if request.query_params.get('saved') %}
+      <div class="alert alert-success alert-float">
+        <i class="bi bi-check-circle me-2"></i>Guardado correctamente.
+      </div>
+      {% endif %}
+      {% if request.query_params.get('submitted') %}
+      <div class="alert alert-success alert-float">
+        <i class="bi bi-send-check me-2"></i>Enviado a Talento Humano correctamente.
+      </div>
+      {% endif %}
+      {% if request.query_params.get('approved') %}
+      <div class="alert alert-success alert-float">
+        <i class="bi bi-patch-check me-2"></i>Aprobado correctamente.
+      </div>
+      {% endif %}
+
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>
