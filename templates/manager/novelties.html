@@ -3,10 +3,10 @@
 
 {% block extra_head %}
 <style>
-  .emp-row td { padding: 6px 8px; vertical-align: middle; }
+  .emp-row td { padding: 8px 10px; vertical-align: middle; }
   .emp-row input[type=number] { width: 80px; font-size: .85rem; }
   .emp-row textarea { font-size: .82rem; resize: vertical; min-height: 38px; }
-  .sticky-header th { position: sticky; top: 56px; z-index: 10; }
+  thead th { background: #1F3864; color: #fff; padding: 10px 10px; white-space: nowrap; }
   .col-name { min-width: 200px; }
   .col-num { width: 88px; }
   .col-obs { min-width: 220px; }
@@ -42,6 +42,7 @@
 {% endif %}
 
 <form method="post" action="/manager/novelties/{{ dept.id }}/{{ period.id }}/save" id="noveltyForm">
+  <input type="hidden" name="do_submit" id="doSubmit" value="">
   <div class="card">
     <div class="card-header d-flex justify-content-between align-items-center">
       <span><i class="bi bi-table me-2"></i>{{ employees|length }} empleado(s)</span>
@@ -182,11 +183,9 @@
       </div>
       <div class="modal-footer">
         <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-        <form method="post" action="/manager/novelties/{{ dept.id }}/{{ period.id }}/submit" style="display:inline">
-          <button type="submit" class="btn btn-success">
-            <i class="bi bi-send-check me-1"></i>Sí, enviar
-          </button>
-        </form>
+        <button type="button" class="btn btn-success" onclick="document.getElementById('doSubmit').value='1'; document.getElementById('noveltyForm').submit();">
+          <i class="bi bi-send-check me-1"></i>Sí, enviar
+        </button>
       </div>
     </div>
   </div>

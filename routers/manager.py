@@ -188,6 +188,24 @@ async def save_novelties(
         novelty.observaciones = obs.strip() or None
 
     db.commit()
+
+    if form_data.get("do_submit") == "1":
+        submission = db.query(models.DepartmentSubmission).filter(
+            models.DepartmentSubmission.department_id == dept_id,
+            models.DepartmentSubmission.period_id == period_id,
+        ).first()
+        if submission is None:
+            submission = models.DepartmentSubmission(
+                department_id=dept_id, period_id=period_id
+            )
+            db.add(submission)
+        if submission.status != models.DepartmentStatus.aprobado:
+            submission.status = models.DepartmentStatus.enviado
+            submission.submitted_at = datetime.utcnow()
+            submission.submitted_by_id = user.id
+            db.commit()
+        return RedirectResponse(url="/manager/dashboard?submitted=1", status_code=302)
+
     return RedirectResponse(
         url=f"/manager/novelties/{dept_id}/{period_id}?saved=1", status_code=302
     )
